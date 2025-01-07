@@ -1,38 +1,29 @@
 import firebase_admin
 from firebase_admin import credentials, db
-import requests
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib import messages
 import os
-from tempfile import NamedTemporaryFile
 
 # Initialize Firebase Admin SDK
 if not firebase_admin._apps:  # Avoid reinitialization error
     try:
-        # Fetch the service account JSON from an environment variable
-        service_account_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+        # Define the relative path to the service_account.json file
+        SERVICE_ACCOUNT_PATH = os.path.join(
+            os.path.dirname(__file__), "../../service_account.json"
+        )
 
-        if not service_account_json:
-            raise ValueError("The 'GOOGLE_APPLICATION_CREDENTIALS_JSON' environment variable is not set.")
+        # Ensure the service_account.json file exists
+        if not os.path.exists(SERVICE_ACCOUNT_PATH):
+            raise FileNotFoundError(f"Service account file not found at: {SERVICE_ACCOUNT_PATH}")
 
-        # Write the JSON content to a temporary file
-        with NamedTemporaryFile(mode="w", delete=False, suffix=".json") as temp_file:
-            temp_file.write(service_account_json)
-            temp_file_path = temp_file.name
-
-        try:
-            # Use the temporary file for Firebase Admin initialization
-            cred = credentials.Certificate(temp_file_path)
-            firebase_admin.initialize_app(cred, {
-                'databaseURL': 'https://musify-2ad60-default-rtdb.asia-southeast1.firebasedatabase.app'
-            })
-        finally:
-            # Ensure the temporary file is deleted after initialization
-            if os.path.exists(temp_file_path):
-                os.remove(temp_file_path)
+        # Initialize Firebase Admin SDK using the service_account.json file
+        cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)
+        firebase_admin.initialize_app(cred, {
+            'databaseURL': 'https://musify-2ad60-default-rtdb.asia-southeast1.firebasedatabase.app'
+        })
 
     except Exception as e:
         raise Exception(f"Error initializing Firebase Admin SDK: {e}")
